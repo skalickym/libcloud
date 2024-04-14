@@ -110,6 +110,7 @@ exclude = '''
         | \.git
         | \.virtualenv
         | __pycache__
+        | secrets\.py
     )/
 )
 '''
