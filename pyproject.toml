@@ -104,7 +104,7 @@ universal = true
 line_length = 100
 target_version = ['py37', 'py38', 'py39', 'py310', 'py311']
 include = '\.pyi?$'
-extended_exclude = '''
+exclude = '''
 (
     /(
         | \.git
