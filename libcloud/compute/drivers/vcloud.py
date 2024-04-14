@@ -450,7 +450,6 @@ class VCloudResponse(XmlResponse):
 
 
 class VCloudConnection(ConnectionUserAndKey):
-
     """
     Connection class for the vCloud driver
     """
@@ -500,7 +499,6 @@ class VCloudConnection(ConnectionUserAndKey):
 
 
 class VCloudNodeDriver(NodeDriver):
-
     """
     vCloud node driver
     """
@@ -910,7 +908,6 @@ class VCloudNodeDriver(NodeDriver):
 
 
 class HostingComConnection(VCloudConnection):
-
     """
     vCloud connection subclass for Hosting.com
     """
@@ -926,7 +923,6 @@ class HostingComConnection(VCloudConnection):
 
 
 class HostingComDriver(VCloudNodeDriver):
-
     """
     vCloud node driver for Hosting.com
     """
@@ -935,7 +931,6 @@ class HostingComDriver(VCloudNodeDriver):
 
 
 class TerremarkConnection(VCloudConnection):
-
     """
     vCloud connection subclass for Terremark
     """
@@ -944,7 +939,6 @@ class TerremarkConnection(VCloudConnection):
 
 
 class TerremarkDriver(VCloudNodeDriver):
-
     """
     vCloud node driver for Terremark
     """
@@ -1776,9 +1770,9 @@ class VCloud_1_5_NodeDriver(VCloudNodeDriver):
                     "xmlns:ovf": "http://schemas.dmtf.org/ovf/envelope/1",
                 },
             )
-            ET.SubElement(
-                network_xml, "ovf:Info"
-            ).text = "Specifies the available VM network connections"
+            ET.SubElement(network_xml, "ovf:Info").text = (
+                "Specifies the available VM network connections"
+            )
 
             headers = {"Content-Type": "application/vnd.vmware.vcloud.networkConnectionSection+xml"}
             res = self.connection.request(
