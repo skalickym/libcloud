@@ -89,9 +89,9 @@ class EquinixMetalConnection(ConnectionKey):
         """
         headers["Content-Type"] = "application/json"
         headers["X-Auth-Token"] = self.key
-        headers[
-            "X-Consumer-Token"
-        ] = "kcrhMn7hwG8Ceo2hAhGFa2qpxLBvVHxEjS9ue8iqmsNkeeB2iQgMq4dNc1893pYu"
+        headers["X-Consumer-Token"] = (
+            "kcrhMn7hwG8Ceo2hAhGFa2qpxLBvVHxEjS9ue8iqmsNkeeB2iQgMq4dNc1893pYu"
+        )
 
         return headers
 
