@@ -192,7 +192,6 @@ class ECSSecurityGroup:
 
 
 class ECSSecurityGroupAttribute:
-
     """
     Security group attribute.
     """

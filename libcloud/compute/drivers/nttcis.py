@@ -652,9 +652,9 @@ class NttCisNodeDriver(NodeDriver):
                         ET.SubElement(additional_nic, "vlanId").text = vlan_id
 
                     if nic.network_adapter_name is not None:
-                        ET.SubElement(
-                            additional_nic, "networkAdapter"
-                        ).text = nic.network_adapter_name
+                        ET.SubElement(additional_nic, "networkAdapter").text = (
+                            nic.network_adapter_name
+                        )
             elif ex_additional_nics is not None:
                 raise TypeError("ex_additional_NICs must be None or tuple/list")
 
@@ -1004,9 +1004,9 @@ class NttCisNodeDriver(NodeDriver):
                 ET.SubElement(import_image_elem, "urn:datacenterId").text = datacenter_id
 
             if is_guest_os_customization is not None:
-                ET.SubElement(
-                    import_image_elem, "urn:guestOsCustomization"
-                ).text = is_guest_os_customization
+                ET.SubElement(import_image_elem, "urn:guestOsCustomization").text = (
+                    is_guest_os_customization
+                )
 
             if (
                 tagkey_name_value_dictionaries is not None
@@ -2273,9 +2273,9 @@ class NttCisNodeDriver(NodeDriver):
         positions_with_rule = ("BEFORE", "AFTER")
 
         create_node = ET.Element("createFirewallRule", {"xmlns": TYPES_URN})
-        ET.SubElement(
-            create_node, "networkDomainId"
-        ).text = self._network_domain_to_network_domain_id(network_domain)
+        ET.SubElement(create_node, "networkDomainId").text = (
+            self._network_domain_to_network_domain_id(network_domain)
+        )
         ET.SubElement(create_node, "name").text = name
         ET.SubElement(create_node, "action").text = action
         ET.SubElement(create_node, "ipVersion").text = ip_version
@@ -3032,9 +3032,9 @@ class NttCisNodeDriver(NodeDriver):
             ET.SubElement(clone_server_elem, "clusterId").text = cluster_id
 
         if is_guest_Os_Customization is not None:
-            ET.SubElement(
-                clone_server_elem, "guestOsCustomization"
-            ).text = is_guest_Os_Customization
+            ET.SubElement(clone_server_elem, "guestOsCustomization").text = (
+                is_guest_Os_Customization
+            )
 
         if tag_key_id is not None:
             tag_elem = ET.SubElement(clone_server_elem, "tagById")
@@ -3724,9 +3724,9 @@ class NttCisNodeDriver(NodeDriver):
             )
 
         create_ip_address_list = ET.Element("createIpAddressList", {"xmlns": TYPES_URN})
-        ET.SubElement(
-            create_ip_address_list, "networkDomainId"
-        ).text = self._network_domain_to_network_domain_id(ex_network_domain)
+        ET.SubElement(create_ip_address_list, "networkDomainId").text = (
+            self._network_domain_to_network_domain_id(ex_network_domain)
+        )
 
         ET.SubElement(create_ip_address_list, "name").text = name
 
@@ -3748,9 +3748,9 @@ class NttCisNodeDriver(NodeDriver):
                 ip_address.set("prefixSize", ip.prefix_size)
 
         if child_ip_address_list is not None:
-            ET.SubElement(
-                create_ip_address_list, "childIpAddressListId"
-            ).text = self._child_ip_address_list_to_child_ip_address_list_id(child_ip_address_list)
+            ET.SubElement(create_ip_address_list, "childIpAddressListId").text = (
+                self._child_ip_address_list_to_child_ip_address_list_id(child_ip_address_list)
+            )
 
         response = self.connection.request_with_orgId_api_2(
             "network/createIpAddressList",
@@ -3851,9 +3851,9 @@ class NttCisNodeDriver(NodeDriver):
                     ip_address.set("prefixSize", ip.prefix_size)
 
         if child_ip_address_lists is not None:
-            ET.SubElement(
-                edit_ip_address_list, "childIpAddressListId"
-            ).text = self._child_ip_address_list_to_child_ip_address_list_id(child_ip_address_lists)
+            ET.SubElement(edit_ip_address_list, "childIpAddressListId").text = (
+                self._child_ip_address_list_to_child_ip_address_list_id(child_ip_address_lists)
+            )
         else:
             ET.SubElement(edit_ip_address_list, "childIpAddressListId", {"xsi:nil": "true"})
 
@@ -4051,9 +4051,9 @@ class NttCisNodeDriver(NodeDriver):
         """
 
         new_port_list = ET.Element("createPortList", {"xmlns": TYPES_URN})
-        ET.SubElement(
-            new_port_list, "networkDomainId"
-        ).text = self._network_domain_to_network_domain_id(ex_network_domain)
+        ET.SubElement(new_port_list, "networkDomainId").text = (
+            self._network_domain_to_network_domain_id(ex_network_domain)
+        )
 
         ET.SubElement(new_port_list, "name").text = name
 
@@ -4068,9 +4068,9 @@ class NttCisNodeDriver(NodeDriver):
 
         if child_portlist_list is not None:
             for child in child_portlist_list:
-                ET.SubElement(
-                    new_port_list, "childPortListId"
-                ).text = self._child_port_list_to_child_port_list_id(child)
+                ET.SubElement(new_port_list, "childPortListId").text = (
+                    self._child_port_list_to_child_port_list_id(child)
+                )
 
         response = self.connection.request_with_orgId_api_2(
             "network/createPortList", method="POST", data=ET.tostring(new_port_list)
@@ -4161,9 +4161,9 @@ class NttCisNodeDriver(NodeDriver):
 
         if child_portlist_list is not None:
             for child in child_portlist_list:
-                ET.SubElement(
-                    existing_port_address_list, "childPortListId"
-                ).text = self._child_port_list_to_child_port_list_id(child)
+                ET.SubElement(existing_port_address_list, "childPortListId").text = (
+                    self._child_port_list_to_child_port_list_id(child)
+                )
         else:
             ET.SubElement(existing_port_address_list, "childPortListId", {"xsi:nil": "true"})
 
@@ -5290,19 +5290,21 @@ class NttCisNodeDriver(NodeDriver):
             "description": findtext(element, "description", TYPES_URN),
             "sourceImageId": findtext(element, "sourceImageId", TYPES_URN),
             "networkId": findtext(element, "networkId", TYPES_URN),
-            "networkDomainId": element.find(fixxpath("networkInfo", TYPES_URN)).get(
-                "networkDomainId"
-            )
-            if has_network_info
-            else None,
+            "networkDomainId": (
+                element.find(fixxpath("networkInfo", TYPES_URN)).get("networkDomainId")
+                if has_network_info
+                else None
+            ),
             "datacenterId": element.get("datacenterId"),
             "deployedTime": findtext(element, "createTime", TYPES_URN),
             "window": (
-                element.find(fixxpath("snapshotService/window", TYPES_URN)).get("dayOfWeek"),
-                element.find(fixxpath("snapshotService/window", TYPES_URN)).get("startHour"),
-            )
-            if has_snapshot
-            else None,
+                (
+                    element.find(fixxpath("snapshotService/window", TYPES_URN)).get("dayOfWeek"),
+                    element.find(fixxpath("snapshotService/window", TYPES_URN)).get("startHour"),
+                )
+                if has_snapshot
+                else None
+            ),
             "cpu": cpu_spec,
             "memoryMb": int(findtext(element, "memoryGb", TYPES_URN)) * 1024,
             "OS_id": operation_system.get("id"),
