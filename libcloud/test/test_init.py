@@ -24,7 +24,7 @@ import libcloud
 from libcloud import _init_once, reset_debug
 from libcloud.base import DriverTypeNotFoundError
 from libcloud.test import unittest
-from libcloud.common.base import LibcloudConnection, Connection
+from libcloud.common.base import Connection, LibcloudConnection
 from libcloud.utils.loggingconnection import LoggingConnection
 
 try:
