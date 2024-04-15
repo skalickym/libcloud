@@ -56,6 +56,10 @@ Storage
   (#1950)
   [@H3199]
 
+- [Amazon S3] Add support for ``eu-west-3`` region.
+  (#1996)
+  [Salih Kerem Dokuz - @keremdokuz]
+
 Changes in Apache Libcloud 3.8.0
 --------------------------------
 
