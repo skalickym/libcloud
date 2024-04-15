@@ -44,7 +44,6 @@ github:
         strict: true
         # contexts are the names of checks that must pass
         contexts:
-          - "Unit Tests (Python 3.7)"
           - "Unit Tests (Python 3.8)"
           - "Unit Tests (Python 3.9)"
           - "Unit Tests (Python 3.10)"
