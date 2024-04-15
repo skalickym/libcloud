@@ -7,6 +7,13 @@ Changes in Apache Libcloud in development
 Common
 ~~~~~~
 
+- Support for Python 3.7 which is EOL has been removed.
+
+  If you still want to use Libcloud with Python 3.7, you should use an older
+  release which still supports Python 3.7.
+  (#1941)
+  [Tomaz Muraus - @Kami]
+
 - Types inheriting from ``libcloud.common.types.Type`` have been made hashable.
   This way they can be directly used for testing memberships in sets which
   contain string representation of the type enum value
@@ -55,6 +62,10 @@ Storage
 - [Amazon S3] Add support for ``eu-south-1`` region.
   (#1950)
   [@H3199]
+
+- [Amazon S3] Add support for ``eu-west-3`` region.
+  (#1996)
+  [Salih Kerem Dokuz - @keremdokuz]
 
 Changes in Apache Libcloud 3.8.0
 --------------------------------
