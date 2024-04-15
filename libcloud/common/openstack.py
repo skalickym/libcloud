@@ -57,7 +57,6 @@ __all__ = [
 
 
 class OpenStackBaseConnection(ConnectionUserAndKey):
-
     """
     Base class for OpenStack connections.
 
