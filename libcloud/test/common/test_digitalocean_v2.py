@@ -21,20 +21,16 @@ from libcloud.utils.py3 import httplib
 from libcloud.common.types import InvalidCredsError
 from libcloud.test.secrets import DIGITALOCEAN_v2_PARAMS
 from libcloud.test.file_fixtures import FileFixtures
-from libcloud.common.digitalocean import DigitalOceanBaseDriver
+from libcloud.common.digitalocean import DigitalOceanBaseDriver, DigitalOcean_v2_BaseDriver
 from libcloud.dns.drivers.digitalocean import DigitalOceanDNSDriver
 
 
 class DigitalOceanTests(LibcloudTestCase):
     def setUp(self):
         DigitalOceanBaseDriver.connectionCls.conn_class = DigitalOceanCommonMockHttp
+        DigitalOcean_v2_BaseDriver.connectionCls.conn_class = DigitalOceanCommonMockHttp
         DigitalOceanCommonMockHttp.type = None
         self.driver = DigitalOceanBaseDriver(*DIGITALOCEAN_v2_PARAMS)
-
-    def tearDown(self):
-        LibcloudConnection.type = None
-        DigitalOceanCommonMockHttp.type = None
-        DigitalOceanBaseDriver.connectionCls.conn_class = LibcloudConnection
 
     def test_authentication(self):
         DigitalOceanCommonMockHttp.type = "UNAUTHORIZED"

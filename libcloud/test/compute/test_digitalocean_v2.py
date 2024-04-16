@@ -40,10 +40,6 @@ class DigitalOcean_v2_Tests(LibcloudTestCase):
         DigitalOceanComputeMockHttp.type = None
         self.driver = DigitalOceanNodeDriver(*DIGITALOCEAN_v2_PARAMS)
 
-    def tearDown(self):
-        LibcloudConnection.type = None
-        DigitalOceanComputeMockHttp.type = None
-
     def test_v1_Error(self):
         self.assertRaises(
             DigitalOcean_v1_Error,

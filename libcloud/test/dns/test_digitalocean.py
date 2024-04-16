@@ -30,10 +30,6 @@ class DigitalOceanDNSTests(LibcloudTestCase):
         DigitalOceanDNSMockHttp.type = None
         self.driver = DigitalOceanDNSDriver(*DIGITALOCEAN_v2_PARAMS)
 
-    def tearDown(self):
-        LibcloudConnection.type = None
-        DigitalOceanDNSMockHttp.type = None
-
     def test_list_zones(self):
         zones = self.driver.list_zones()
         self.assertTrue(len(zones) >= 1)
