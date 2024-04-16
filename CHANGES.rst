@@ -67,6 +67,22 @@ Storage
   (#1996)
   [Salih Kerem Dokuz - @keremdokuz]
 
+Other / Development
+~~~~~--------------
+
+- pytest library used for running tests and microbenchmarks has been upgraded to
+  v8.1.
+
+  Changes in the pytest test discovery and collection mechanism and ordering
+  have uncovered some race conditions and cross test pollution which has been
+  addressed.
+
+  Now all the tests are passing, but it's possible that there are still some
+  race conditions hiding which many only pop up in the future (since we run
+  tests in parallel and order in which they run is not fully deterministic).
+  (#1994)
+  [Tomaz Muraus - @Kami]
+
 Changes in Apache Libcloud 3.8.0
 --------------------------------
 
