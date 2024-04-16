@@ -20,6 +20,7 @@ import tempfile
 from unittest import mock
 from unittest.mock import patch
 
+import pytest
 import libcloud
 from libcloud import _init_once, reset_debug
 from libcloud.base import DriverTypeNotFoundError
@@ -48,6 +49,7 @@ class TestUtils(unittest.TestCase):
             paramiko_logger.setLevel(logging.INFO)
 
     @mock.patch.dict(os.environ, {"LIBCLOUD_DEBUG": ""}, clear=True)
+    @pytest.mark.serial
     def test_init_once_and_no_debug_mode(self):
         if have_paramiko:
             paramiko_logger = logging.getLogger("paramiko")
@@ -68,6 +70,7 @@ class TestUtils(unittest.TestCase):
             self.assertEqual(paramiko_log_level, logging.INFO)
 
     @mock.patch.dict(os.environ, {"LIBCLOUD_DEBUG": TEMP_LOGFILE_PATH}, clear=True)
+    @pytest.mark.serial
     def test_init_once_and_debug_mode(self):
         if have_paramiko:
             paramiko_logger = logging.getLogger("paramiko")
