@@ -39,13 +39,20 @@ _, TEMP_LOGFILE_PATH = tempfile.mkstemp()
 
 class TestUtils(unittest.TestCase):
     def setUp(self):
+        # Reset debug level
         reset_debug()
+
+        # Reset paramiko log level
+        if have_paramiko:
+            paramiko_logger = logging.getLogger("paramiko")
+            paramiko_logger.setLevel(logging.INFO)
 
     @mock.patch.dict(os.environ, {"LIBCLOUD_DEBUG": ""}, clear=True)
     def test_init_once_and_no_debug_mode(self):
         if have_paramiko:
             paramiko_logger = logging.getLogger("paramiko")
-            paramiko_logger.setLevel(logging.INFO)
+            paramiko_log_level = paramiko_logger.getEffectiveLevel()
+            self.assertEqual(paramiko_log_level, logging.INFO)
 
         self.assertIsNone(LoggingConnection.log)
         self.assertEqual(Connection.conn_class, LibcloudConnection)
@@ -64,7 +71,8 @@ class TestUtils(unittest.TestCase):
     def test_init_once_and_debug_mode(self):
         if have_paramiko:
             paramiko_logger = logging.getLogger("paramiko")
-            paramiko_logger.setLevel(logging.INFO)
+            paramiko_log_level = paramiko_logger.getEffectiveLevel()
+            self.assertEqual(paramiko_log_level, logging.INFO)
 
         self.assertIsNone(LoggingConnection.log)
         self.assertEqual(Connection.conn_class, LibcloudConnection)
