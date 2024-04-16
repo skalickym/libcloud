@@ -24,8 +24,15 @@ from libcloud.compute.base import NodeImage
 from libcloud.test.secrets import DIGITALOCEAN_v1_PARAMS, DIGITALOCEAN_v2_PARAMS
 from libcloud.utils.iso8601 import UTC
 from libcloud.test.file_fixtures import ComputeFileFixtures
-from libcloud.common.digitalocean import DigitalOcean_v1_Error
-from libcloud.compute.drivers.digitalocean import DigitalOceanNodeDriver
+from libcloud.common.digitalocean import (
+    DigitalOcean_v1_Error,
+    DigitalOceanBaseDriver,
+    DigitalOcean_v2_BaseDriver,
+)
+from libcloud.compute.drivers.digitalocean import (
+    DigitalOceanNodeDriver,
+    DigitalOcean_v2_NodeDriver,
+)
 
 try:
     import simplejson as json
@@ -36,9 +43,16 @@ except ImportError:
 # class DigitalOceanTests(unittest.TestCase, TestCaseMixin):
 class DigitalOcean_v2_Tests(LibcloudTestCase):
     def setUp(self):
+        DigitalOceanBaseDriver.connectionCls.conn_class = DigitalOceanComputeMockHttp
+        DigitalOcean_v2_BaseDriver.connectionCls.conn_class = DigitalOceanComputeMockHttp
         DigitalOceanNodeDriver.connectionCls.conn_class = DigitalOceanComputeMockHttp
+        DigitalOcean_v2_NodeDriver.connectionCls.conn_class = DigitalOceanComputeMockHttp
         DigitalOceanComputeMockHttp.type = None
         self.driver = DigitalOceanNodeDriver(*DIGITALOCEAN_v2_PARAMS)
+
+    def tearDown(self):
+        LibcloudConnection.type = None
+        DigitalOceanComputeMockHttp.type = None
 
     def test_v1_Error(self):
         self.assertRaises(
