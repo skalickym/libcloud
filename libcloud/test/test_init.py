@@ -44,9 +44,10 @@ class TestUtils(unittest.TestCase):
         # Reset debug level
         reset_debug()
 
-        # Reset paramiko log level
+        # Reset paramiko log level and handlers
         if have_paramiko:
             paramiko_logger = logging.getLogger("paramiko")
+            paramiko_logger.handlers = []
             paramiko_logger.setLevel(logging.INFO)
 
     @mock.patch.dict(os.environ, {"LIBCLOUD_DEBUG": ""}, clear=True)
