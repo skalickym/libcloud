@@ -21,6 +21,7 @@ from unittest import mock
 from unittest.mock import patch
 
 import pytest
+
 import libcloud
 from libcloud import _init_once, reset_debug
 from libcloud.base import DriverTypeNotFoundError
