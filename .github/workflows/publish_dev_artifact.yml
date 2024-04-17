@@ -33,7 +33,7 @@ jobs:
           fetch-depth: 1
 
       - name: Use Python ${{ matrix.python_version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.8
 
@@ -52,7 +52,7 @@ jobs:
           ls -la dist | grep .whl
 
       - name: Store dev artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: libcloud-dev-artifacts
           retention-days: 60

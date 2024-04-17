@@ -1060,7 +1060,6 @@ class TerremarkMockHttp(MockHttp):
 
 
 class AnotherErrorMember(Exception):
-
     """
     helper class for the synthetic exception
     """
