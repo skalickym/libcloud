@@ -65,6 +65,19 @@ def enable_debug(fo):
     atexit.register(close_file, fo)
 
 
+def reset_debug():
+    """
+    Reset debugging functionality (if set).
+
+    NOTE: This function is only meant to be used in the tests.
+    """
+    from libcloud.common.base import Connection, LibcloudConnection
+    from libcloud.utils.loggingconnection import LoggingConnection
+
+    LoggingConnection.log = None
+    Connection.conn_class = LibcloudConnection
+
+
 def _init_once():
     """
     Utility function that is ran once on Library import.

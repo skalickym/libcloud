@@ -7,6 +7,13 @@ Changes in Apache Libcloud in development
 Common
 ~~~~~~
 
+- Support for Python 3.7 which is EOL has been removed.
+
+  If you still want to use Libcloud with Python 3.7, you should use an older
+  release which still supports Python 3.7.
+  (#1941)
+  [Tomaz Muraus - @Kami]
+
 - Types inheriting from ``libcloud.common.types.Type`` have been made hashable.
   This way they can be directly used for testing memberships in sets which
   contain string representation of the type enum value
@@ -20,6 +27,11 @@ Common
 
 Compute
 ~~~~~~~
+
+- [OpenStack] Add metadata fields ``os_distro`` and ``os_version`` provided
+  by OpenStack Image API (if set) to the ``extra`` field of the OpenStack NodeImage.
+  (#1982)
+  [Miguel Caballer - @micafer]
 
 - [LINODE] Add support for cloud-init metadata support to create_node()
   Add new functions ``create_key_pair``, ``list_key_pairs``, and ``get_image``
@@ -55,6 +67,26 @@ Storage
 - [Amazon S3] Add support for ``eu-south-1`` region.
   (#1950)
   [@H3199]
+
+- [Amazon S3] Add support for ``eu-west-3`` region.
+  (#1996)
+  [Salih Kerem Dokuz - @keremdokuz]
+
+Other / Development
+~~~~~--------------
+
+- pytest library used for running tests and microbenchmarks has been upgraded to
+  v8.1.
+
+  Changes in the pytest test discovery and collection mechanism and ordering
+  have uncovered some race conditions and cross test pollution which has been
+  addressed.
+
+  Now all the tests are passing, but it's possible that there are still some
+  race conditions hiding which many only pop up in the future (since we run
+  tests in parallel and order in which they run is not fully deterministic).
+  (#1994)
+  [Tomaz Muraus - @Kami]
 
 Changes in Apache Libcloud 3.8.0
 --------------------------------
