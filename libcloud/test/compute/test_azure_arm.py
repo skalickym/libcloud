@@ -393,9 +393,11 @@ class AzureNodeDriverTests(LibcloudTestCase):
                 # 200 - NIC destroyed
                 lambda f: (httplib.OK, None, {}, "OK"),
                 # 200 - managed OS disk destroyed
-                lambda f: (httplib.OK, None, {}, "OK")
-                if response == 200
-                else error(BaseHTTPError, code=response, message="Deleted or deferred"),
+                lambda f: (
+                    (httplib.OK, None, {}, "OK")
+                    if response == 200
+                    else error(BaseHTTPError, code=response, message="Deleted or deferred")
+                ),
             ]
             ret = self.driver.destroy_node(node, ex_destroy_os_disk=True)
             self.assertTrue(ret)

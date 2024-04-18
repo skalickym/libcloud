@@ -205,7 +205,7 @@ class MockHttp(LibcloudConnection):
         )  # Python 3.7 no longer quotes ~
 
         if type:
-            meth_name = "{}_{}".format(meth_name, self.type)
+            meth_name = "{}_{}".format(meth_name, type)
 
         if use_param and use_param in qs:
             param = qs[use_param][0].replace(".", "_").replace("-", "_")
