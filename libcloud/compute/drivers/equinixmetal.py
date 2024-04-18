@@ -305,7 +305,9 @@ def _list_async(driver):
 
         location_code = location.extra["code"]
         if not self._valid_location:
-            raise ValueError("Failed to create node: valid parameter metro [code] is required in the input")
+            raise ValueError(
+                "Failed to create node: valid parameter metro [code] is required in the input"
+            )
 
         params = {
             "hostname": name,
@@ -1068,6 +1070,7 @@ def _list_async(driver):
             if metro["code"] == metro_code:
                 return True
         return False
+
 
 class Project:
     def __init__(self, project):

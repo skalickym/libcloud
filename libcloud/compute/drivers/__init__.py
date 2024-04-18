@@ -33,5 +33,5 @@ __all__ = [
     "vcloud",
     "vpsnet",
     "onapp",
-    "equinixmetal"
+    "equinixmetal",
 ]
