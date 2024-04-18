@@ -28,6 +28,11 @@ Common
 Compute
 ~~~~~~~
 
+- [OpenStack] Add metadata fields ``os_distro`` and ``os_version`` provided
+  by OpenStack Image API (if set) to the ``extra`` field of the OpenStack NodeImage.
+  (#1982)
+  [Miguel Caballer - @micafer]
+
 - [LINODE] Add support for cloud-init metadata support to create_node()
   Add new functions ``create_key_pair``, ``list_key_pairs``, and ``get_image``
   (#1946)
