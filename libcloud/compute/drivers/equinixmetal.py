@@ -272,7 +272,7 @@ def _list_async(driver):
         image,
         location,
         ex_project_id=None,
-        ip_addresses=[],
+        ip_addresses=None,
         cloud_init=None,
         **kwargs,
     ):
