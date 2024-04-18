@@ -19,7 +19,6 @@
 #
 
 import sys
-import json
 import unittest
 
 # This is causing test failures inder Python 3.5
@@ -251,6 +250,7 @@ g5ZW2BiJzvqz5PebGS70y/ySCNW1qQmJURK/Wc1bt9en root@libcloud",
 
                 break
 
+
 class EquinixMetalMockHttp(MockHttp):
     fixtures = ComputeFileFixtures("equinixmetal")
 
@@ -460,6 +460,7 @@ class EquinixMetalMockHttp(MockHttp):
     def _metal_v1_ips_aea4ee0c_675f_4b77_8337_8e13b868dd9c(self, method, url, body, headers):
         if method == "DELETE":
             return (httplib.OK, "", {}, httplib.responses[httplib.OK])
+
 
 if __name__ == "__main__":
     sys.exit(unittest.main())

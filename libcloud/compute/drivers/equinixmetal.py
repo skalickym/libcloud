@@ -22,18 +22,10 @@ except ImportError:  # If not available will do things serially
     asyncio = None
 
 import json
-import datetime
 
 from libcloud.utils.py3 import httplib
 from libcloud.common.base import JsonResponse, ConnectionKey
-from libcloud.compute.base import (
-    Node,
-    KeyPair,
-    NodeSize,
-    NodeImage,
-    NodeDriver,
-    NodeLocation,
-)
+from libcloud.compute.base import Node, KeyPair, NodeSize, NodeImage, NodeDriver, NodeLocation
 from libcloud.compute.types import Provider, NodeState, InvalidCredsError
 
 EQUINIXMETAL_ENDPOINT = "api.equinix.com"
