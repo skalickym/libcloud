@@ -1063,7 +1063,7 @@ def _list_async(driver):
         return data
 
     def _valid_location(self, metro_code):
-        if metro_code == None or metro_code == "":
+        if not metro_code:
             return False
         metros = self.connection.request("/metal/v1/locations/metros").object["metros"]
         for metro in metros:
