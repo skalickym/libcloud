@@ -66,6 +66,13 @@ Compute
   (#1971)
   [Aayush Rangwala - @aayushrangwala]
 
+- [Equinix Metal] Remove all the methods for managing volumes and volume
+  snapshots. This functionality hasn't been supported on the server side
+  for many years already.
+
+  (#1972)
+  [Aayush Rangwala - @aayushrangwala]
+
 Storage
 ~~~~~~~
 
