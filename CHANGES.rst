@@ -61,6 +61,11 @@ Compute
   (#1973)
   [Denis Lussier - @luss]
 
+- [Equinix Metal] Deprecate facility API and replace it with metros location.
+
+  (#1971)
+  [Aayush Rangwala - @aayushrangwala]
+
 Storage
 ~~~~~~~
 
