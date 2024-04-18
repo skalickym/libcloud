@@ -209,7 +209,7 @@ class EquinixMetalNodeDriver(NodeDriver):
         # order to prevent a SyntaxError in Python2 due to "yield from".
         # This cruft can be removed once Python2 support is no longer
         # required.
-        assert resource_type in ["nodes", "volumes"]
+        assert resource_type in ["nodes"]
         glob = globals()
         loc = locals()
         exec(
