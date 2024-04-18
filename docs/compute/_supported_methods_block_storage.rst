@@ -15,7 +15,7 @@ Provider                       list volumes create volume destroy volume attach 
 `DigitalOcean`_                yes          yes           yes            yes           yes           yes            yes            
 `DimensionData`_               no           no            no             no            no            no             no             
 `Amazon EC2`_                  yes          yes           yes            yes           yes           yes            yes            
-`EquinixMetal`_                yes          yes           yes            yes           yes           yes            yes            
+`EquinixMetal`_                no           no            no             no            no            no             no             
 `Eucalyptus`_                  yes          yes           yes            yes           yes           yes            yes            
 `Exoscale`_                    yes          yes           yes            yes           yes           no             yes            
 `Gandi`_                       yes          yes           yes            yes           yes           no             no             
