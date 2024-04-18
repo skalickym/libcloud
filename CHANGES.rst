@@ -70,8 +70,11 @@ Compute
   snapshots. This functionality hasn't been supported on the server side
   for many years already.
 
+  Corresponding `disk` and `disk_size` argument has also been removed from
+  the `create_node()` method.
+
   (#1972)
-  [Aayush Rangwala - @aayushrangwala]
+  [Aayush Rangwala - @aayushrangwala, Tomaz Muraus - @Kami]
 
 Storage
 ~~~~~~~
