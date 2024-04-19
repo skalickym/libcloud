@@ -22,6 +22,14 @@ Libcloud 3.9.0
 
     destroy_node(..., ex_destroy_os_disk=False)
 
+* [Equinix Metal] All the volume and volume snapshot management methods which
+  have been unsupported on the server side since 2021 have been removed from the
+  driver. In addition to that, `disk` and `disk_size` argument has been removed
+  from the `create_node()`  method.
+
+  If your code is using those arguments / passing them to the `create_node()`
+  method it needs to be updated and those arguments removed.
+
 Libcloud 3.8.0
 --------------
 

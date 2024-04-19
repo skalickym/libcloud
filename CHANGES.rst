@@ -61,6 +61,21 @@ Compute
   (#1973)
   [Denis Lussier - @luss]
 
+- [Equinix Metal] Deprecate facility API and replace it with metros location.
+
+  (#1971)
+  [Aayush Rangwala - @aayushrangwala]
+
+- [Equinix Metal] Remove all the methods for managing volumes and volume
+  snapshots. This functionality hasn't been supported on the server side
+  for many years already.
+
+  Corresponding `disk` and `disk_size` argument has also been removed from
+  the `create_node()` method.
+
+  (#1972)
+  [Aayush Rangwala - @aayushrangwala, Tomaz Muraus - @Kami]
+
 Storage
 ~~~~~~~
 
