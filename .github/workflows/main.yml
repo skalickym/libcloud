@@ -84,7 +84,7 @@ jobs:
           dotnet-version: "6.0.100"
 
       - name: Cache Python Dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements-tests.txt', '') }}
@@ -134,7 +134,7 @@ jobs:
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq graphviz gcc libvirt-dev
 
       - name: Cache Python Dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements-tests.txt') }}
@@ -150,7 +150,7 @@ jobs:
           tox -e coverage-ci
 
       - name: Upload Coverage to codecov.io
-        uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d # v3.1.4
+        uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed # v4.3.0
         with:
           # We utilize secret for more realiable builds. Without secret being set, upload step
           # fails fairly often.
@@ -182,7 +182,7 @@ jobs:
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq graphviz gcc libvirt-dev
 
       - name: Cache Python Dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements-lint.txt') }}
@@ -249,7 +249,7 @@ jobs:
           python-version: ${{ matrix.python_version }}
 
       - name: Cache Python Dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements-lint.txt') }}
@@ -317,7 +317,7 @@ jobs:
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq graphviz gcc libvirt-dev
 
       - name: Cache Python Dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements-tests.txt') }}
@@ -361,7 +361,7 @@ jobs:
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq graphviz gcc libvirt-dev
 
       - name: Cache Python Dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements-docs.txt') }}
