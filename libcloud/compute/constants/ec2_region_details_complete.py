@@ -3501,7 +3501,7 @@ REGION_DETAILS = {
             "m5d.12xlarge",
             "m5d.16xlarge",
             "m5d.24xlarge",
-            m5d.2xlarge
+            "m5d.2xlarge",
             "m5d.4xlarge",
             "m5d.8xlarge",
             "m5d.large",
@@ -3563,7 +3563,7 @@ REGION_DETAILS = {
             "r5d.large",
             "r5d.metal",
             "r5d.xlarge",
-            r6g.12xlarge
+            "r6g.12xlarge",
             "r6g.16xlarge",
             "r6g.2xlarge",
             "r6g.4xlarge",
