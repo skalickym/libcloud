@@ -144,6 +144,9 @@ class EC2Tests(LibcloudTestCase, TestCaseMixin):
         driver = EC2NodeDriver(*EC2_PARAMS, region="eu-central-1", signature_version="4")
         self.assertEqual(driver.signature_version, "4")
 
+        driver = EC2NodeDriver(*EC2_PARAMS, region="eu-central-2", signature_version="4")
+        self.assertEqual(driver.signature_version, "4")
+
         driver = EC2NodeDriver(*EC2_PARAMS, region="ap-east-1")
         self.assertEqual(driver.signature_version, "2")
 
