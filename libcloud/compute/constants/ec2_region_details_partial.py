@@ -99,6 +99,13 @@ REGION_DETAILS = {
         "id": "eu-central-1",
         "signature_version": "4",
     },
+    "eu-central-2": {
+        "api_name": "ec2_eu_central_2",
+        "country": "Zurich",
+        "endpoint": "ec2.eu-central-2.amazonaws.com",
+        "id": "eu-central-2",
+        "signature_version": "4",
+    },
     "eu-north-1": {
         "api_name": "ec2_eu_north_stockholm",
         "country": "Stockholm",
