@@ -3162,7 +3162,7 @@ class OpenStack_2_NodeDriver(OpenStack_1_1_NodeDriver):
             extra["subnets"] = obj.get("subnets")
         if obj.get("tags", None):
             extra["tags"] = obj.get("tags")
-        if obj.get("is_default", None):
+        if obj.get("is_default", None) is not None:
             extra["is_default"] = obj.get("is_default")
         return OpenStackNetwork(id=obj["id"], name=obj["name"], cidr=None, driver=self, extra=extra)
 
