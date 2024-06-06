@@ -2121,6 +2121,7 @@ class OpenStack_2_Tests(OpenStack_1_1_Tests):
         self.assertEqual(network.id, "cc2dad14-827a-feea-416b-f13e50511a0a")
         self.assertTrue(isinstance(network, OpenStackNetwork))
         self.assertEqual(network.name, "net2")
+        self.assertEqual(network.extra["is_default"], False)
 
     def test_ex_list_subnets(self):
         subnets = self.driver.ex_list_subnets()
