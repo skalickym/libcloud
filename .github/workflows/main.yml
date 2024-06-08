@@ -150,7 +150,7 @@ jobs:
           tox -e coverage-ci
 
       - name: Upload Coverage to codecov.io
-        uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed # v4.3.0
+        uses: codecov/codecov-action@125fc84a9a348dbcf27191600683ec096ec9021c # v4.4.1
         with:
           # We utilize secret for more realiable builds. Without secret being set, upload step
           # fails fairly often.
