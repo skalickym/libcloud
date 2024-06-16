@@ -76,6 +76,10 @@ Compute
   (#1972)
   [Aayush Rangwala - @aayushrangwala, Tomaz Muraus - @Kami]
 
+- [Amazon EC2] Update pricing and sizing data.
+  (#2012)
+  [Eric Anderson - @eric-anderson]
+
 Storage
 ~~~~~~~
 
