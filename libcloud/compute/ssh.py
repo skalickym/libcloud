@@ -318,7 +318,9 @@ class ParamikoSSHClient(BaseSSHClient):
         self.use_compression = use_compression
 
         self.client = paramiko.SSHClient()
-        self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        # Long term we should switch to a more secure default, but this would break
+        # a lot  of non-interactive deployment scripts
+        self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())  # nosec
         self.logger = self._get_and_setup_logger()
 
         # This object is lazily created on first SFTP operation (e.g. put()
