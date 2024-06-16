@@ -74,7 +74,7 @@ preparing a release.
 * Make sure ``CHANGES`` file is up to date
 * Make sure ``__version__`` string in ``libcloud/__init__.py`` is up to date
 * Make sure ``version`` and ``release`` in ``docs/conf.py`` are up to date
-* Update constants, pricing and other auto-generated data: ``tox -e scrape-ec2-sizes,scrape-ec2-prices``
+* Update constants, pricing and other auto-generated data: ``tox -e scrape-ec2-sizes,scrape-ec2-prices,black,isort``
 
 1. Pre-release check list
 ~~~~~~~~~~~~~~~~~~~~~~~~~
