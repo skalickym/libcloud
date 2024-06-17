@@ -2121,6 +2121,15 @@ class OpenStack_2_Tests(OpenStack_1_1_Tests):
         self.assertEqual(network.id, "cc2dad14-827a-feea-416b-f13e50511a0a")
         self.assertTrue(isinstance(network, OpenStackNetwork))
         self.assertEqual(network.name, "net2")
+        self.assertEqual(network.extra["is_default"], False)
+        self.assertEqual(network.extra["tags"], ["tag1,tag2"])
+
+        network = self.driver.ex_get_network("e4e207ac-6707-432b-82b9-244f6859c394")
+
+        self.assertEqual(network.id, "e4e207ac-6707-432b-82b9-244f6859c394")
+        self.assertTrue(isinstance(network, OpenStackNetwork))
+        self.assertEqual(network.name, "net2")
+        self.assertNotIn("tags", network.extra)
 
     def test_ex_list_subnets(self):
         subnets = self.driver.ex_list_subnets()
@@ -3397,6 +3406,19 @@ class OpenStack_1_1_MockHttp(MockHttp, unittest.TestCase):
     ):
         if method == "GET":
             body = self.fixtures.load("_v2_0__network.json")
+            return (
+                httplib.OK,
+                body,
+                self.json_content_headers,
+                httplib.responses[httplib.OK],
+            )
+        raise NotImplementedError()
+
+    def _v2_1337_v2_0_networks_e4e207ac_6707_432b_82b9_244f6859c394(
+        self, method, url, body, headers
+    ):
+        if method == "GET":
+            body = self.fixtures.load("_v2_0__network_no_tags.json")
             return (
                 httplib.OK,
                 body,
