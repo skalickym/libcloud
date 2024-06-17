@@ -3160,6 +3160,12 @@ class OpenStack_2_NodeDriver(OpenStack_1_1_NodeDriver):
             extra["router:external"] = obj.get("router:external")
         if obj.get("subnets", None):
             extra["subnets"] = obj.get("subnets")
+        if obj.get("tags", None):
+            extra["tags"] = obj.get("tags")
+        if obj.get("is_default", None) is not None:
+            extra["is_default"] = obj.get("is_default")
+        if obj.get("description", None) is not None:
+            extra["description"] = obj.get("description")
         return OpenStackNetwork(id=obj["id"], name=obj["name"], cidr=None, driver=self, extra=extra)
 
     def ex_list_networks(self):
