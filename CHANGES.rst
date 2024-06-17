@@ -80,6 +80,11 @@ Compute
   (#2012)
   [Eric Anderson - @eric-anderson]
 
+- [OpenStack] Add `is_default` and `tags` extra fields to the OpenStack
+  Network Object (`OpenStackNetwork`).
+  (#2016)
+  [Miguel Caballer - @micafer]
+
 Storage
 ~~~~~~~
 
