@@ -3164,7 +3164,7 @@ class OpenStack_2_NodeDriver(OpenStack_1_1_NodeDriver):
             extra["tags"] = obj.get("tags")
         if obj.get("is_default", None) is not None:
             extra["is_default"] = obj.get("is_default")
-        if obj.get("description", None):
+        if obj.get("description", None) is not None:
             extra["description"] = obj.get("description")
         return OpenStackNetwork(id=obj["id"], name=obj["name"], cidr=None, driver=self, extra=extra)
 

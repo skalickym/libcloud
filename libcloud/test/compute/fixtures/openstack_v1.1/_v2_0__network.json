@@ -27,6 +27,7 @@
         "updated_at": "2016-03-08T20:19:41",
         "vlan_transparent": false,
         "description": "",
-        "is_default": false
+        "is_default": false,
+        "tags": ["tag1,tag2"]
     }
 }
