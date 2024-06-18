@@ -17,12 +17,15 @@ import sys
 
 from libcloud.test import MockHttp, unittest
 from libcloud.utils.py3 import httplib
+from libcloud.compute.base import NodeAuthPassword
 from libcloud.compute.types import NodeState
 from libcloud.test.file_fixtures import ComputeFileFixtures
 from libcloud.compute.drivers.kubevirt import (
     KubeVirtNodeSize,
     KubeVirtNodeImage,
     KubeVirtNodeDriver,
+    _memory_in_MB,
+    _deep_merge_dict,
 )
 from libcloud.test.common.test_kubernetes import KubernetesAuthTestCaseMixin
 
@@ -108,6 +111,242 @@ class KubeVirtTestCase(unittest.TestCase, KubernetesAuthTestCaseMixin):
         self.assertEqual(node.name, "testcreatenode")
         self.assertEqual(node.size.extra["cpu"], 1)
         self.assertEqual(node.size.ram, 128)
+
+    def test_create_node_default_net(self):
+        node = self.driver.create_node(
+            name="testcreatenode",
+            size=KubeVirtNodeSize(cpu=1, ram=128),
+            image=KubeVirtNodeImage("kubevirt/cirros-registry-disk-demo"),
+            ex_disks=[
+                {
+                    "name": "anpvc",
+                    "bus": "virtio",
+                    "device": "disk",
+                    "disk_type": "persistentVolumeClaim",
+                    "volume_spec": {"claim_name": "mypvc2"},
+                },
+            ],
+        )
+        self.assertEqual(node.name, "testcreatenode")
+        self.assertEqual(node.size.extra["cpu"], 1)
+        self.assertEqual(node.size.ram, 128)
+
+    def test_create_node_legacy_3_tuple_net(self):
+        node = self.driver.create_node(
+            name="testcreatenode",
+            size=KubeVirtNodeSize(cpu=1, ram=128),
+            image=KubeVirtNodeImage("kubevirt/cirros-registry-disk-demo"),
+            ex_disks=[
+                {
+                    "name": "anpvc",
+                    "bus": "virtio",
+                    "device": "disk",
+                    "disk_type": "persistentVolumeClaim",
+                    "volume_spec": {"claim_name": "mypvc2"},
+                },
+            ],
+            ex_network=("pod", "masquerade", "netw1"),
+        )
+        self.assertEqual(node.name, "testcreatenode")
+        self.assertEqual(node.size.extra["cpu"], 1)
+        self.assertEqual(node.size.ram, 128)
+
+    def test_create_node_auth_and_cloud_init(self):
+        try:
+            self.driver.create_node(
+                name="testcreatenode",
+                size=KubeVirtNodeSize(cpu=1, ram=128),
+                image=KubeVirtNodeImage("kubevirt/cirros-registry-disk-demo"),
+                auth=NodeAuthPassword("password"),
+                ex_disks=[
+                    {
+                        "name": "anpvc",
+                        "bus": "virtio",
+                        "device": "disk",
+                        "disk_type": "persistentVolumeClaim",
+                        "volume_spec": {"claim_name": "mypvc2"},
+                    },
+                    {
+                        "name": "cloudinit",
+                        "bus": "virtio",
+                        "device": "cdrom",
+                        "disk_type": "cloudInitConfigDrive",
+                        "volume_spec": {
+                            "cloudInitNoCloud": {
+                                "userData": "echo 'hello world'",
+                            }
+                        },
+                    },
+                ],
+            )
+        except ValueError as e:
+            self.assertIn("auth and cloudInit at the same time", str(e))
+        else:
+            self.fail("Expected ValueError")
+
+    def test_create_node_bad_pvc(self):
+        try:
+            self.driver.create_node(
+                name="testcreatenode",
+                size=KubeVirtNodeSize(cpu=1, ram=128),
+                image=KubeVirtNodeImage("kubevirt/cirros-registry-disk-demo"),
+                ex_disks=[
+                    {
+                        "name": "badpvc",
+                        "bus": "virtio",
+                        "device": "disk",
+                        "disk_type": "persistentVolumeClaim",
+                        "volume_spec": {
+                            "claim_name": "notexistnewpvc",
+                            "storage_class_name": "longhorn",
+                            # missing size
+                        },
+                    },
+                ],
+            )
+        except KeyError as e:
+            self.assertIn("size", str(e))
+            self.assertIn("storage_class_name", str(e))
+            self.assertIn("both required", str(e))
+        else:
+            self.fail("Expected KeyError")
+
+    def test_create_node_ex_template(self):
+        # missing the optional metadata & required apiVersion
+        # metadata will be added by the driver
+        # and apiVersion missing will raise an error by _create_node_with_template
+        template = {
+            "kind": "VirtualMachine",
+            "spec": {
+                "running": False,
+                "template": {
+                    "spec": {
+                        "domain": {
+                            "devices": {
+                                "disks": [],
+                                "interfaces": [],
+                                "networkInterfaceMultiqueue": False,
+                            },
+                            "machine": {"type": ""},
+                            "resources": {"requests": {}, "limits": {}},
+                        },
+                        "networks": [],
+                        "terminationGracePeriodSeconds": 0,
+                        "volumes": [],
+                    },
+                },
+            },
+        }
+        try:
+            self.driver.create_node(
+                name="testcreatenode",
+                # size & image should be ignored when ex_template is provided
+                size=KubeVirtNodeSize(cpu=1, ram=128),
+                image=KubeVirtNodeImage("kubevirt/cirros-registry-disk-demo"),
+                ex_template=template,
+            )
+        except ValueError as e:
+            self.assertEqual(str(e), "The template must have an apiVersion: kubevirt.io/v1alpha3")
+        else:
+            self.fail("Expected ValueError")
+
+    def test_memory_in_MB(self):
+        self.assertEqual(_memory_in_MB("128Mi"), 128)
+        self.assertEqual(_memory_in_MB("128M"), 128)
+
+        self.assertEqual(_memory_in_MB("134217728"), 128)
+        self.assertEqual(_memory_in_MB(134217728), 128)
+
+        self.assertEqual(_memory_in_MB("128Gi"), 128 * 1024)
+        self.assertEqual(_memory_in_MB("128G"), 128 * 1000)
+
+        self.assertEqual(_memory_in_MB("1920Ki"), 1920 // 1024)
+        self.assertEqual(_memory_in_MB("1920K"), 1920 // 1000)
+
+        self.assertEqual(_memory_in_MB("1Ti"), 1 * 1024 * 1024)
+        self.assertEqual(_memory_in_MB("1T"), 1 * 1000 * 1000)
+
+    def test_deep_merge_dict(self):
+        a = {"domain": {"devices": 0}, "volumes": [1, 2, 3], "network": {}}
+        b = {"domain": {"machine": "non-exist-in-a", "devices": 1024}, "volumes": [4, 5, 6]}
+        expected_result = {
+            "domain": {"machine": "non-exist-in-a", "devices": 1024},
+            "volumes": [1, 2, 3],
+            "network": {},
+        }
+        self.assertEqual(_deep_merge_dict(a, b), expected_result)
+
+        a = {"domain": {"devices": 1024}, "volumes": [1, 2, 3], "network": {}}
+        b = {"domain": {"machine": "non-exist-in-a", "devices": 0}, "volumes": [4, 5, 6]}
+        expected_result = {
+            "domain": {"machine": "non-exist-in-a", "devices": 1024},
+            "volumes": [1, 2, 3],
+            "network": {},
+        }
+        self.assertEqual(_deep_merge_dict(a, b), expected_result)
+
+        a = {"domain": {"devices": 0}, "volumes": [1, 2, 3], "network": {}}
+        b = {"domain": {"machine": "non-exist-in-a", "devices": 0}, "volumes": [4, 5, 6]}
+        expected_result = {
+            "domain": {"machine": "non-exist-in-a", "devices": 0},
+            "volumes": [1, 2, 3],
+            "network": {},
+        }
+        self.assertEqual(_deep_merge_dict(a, b), expected_result)
+
+        a = {"domain": {"devices": 1024}, "volumes": [1, 2, 3], "network": {}}
+        b = {"domain": {"machine": "non-exist-in-a", "devices": 1024}, "volumes": [4, 5, 6]}
+        expected_result = {
+            "domain": {"machine": "non-exist-in-a", "devices": 1024},
+            "volumes": [1, 2, 3],
+            "network": {},
+        }
+        self.assertEqual(_deep_merge_dict(a, b), expected_result)
+
+        a = {"domain": {"devices": 1024}, "volumes": [1, 2, 3], "network": {}}
+        b = {"domain": {"machine": "non-exist-in-a", "devices": 2048}, "volumes": [4, 5, 6]}
+        expected_result = {
+            "domain": {"machine": "non-exist-in-a", "devices": 1024},
+            "volumes": [1, 2, 3],
+            "network": {},
+        }
+        self.assertEqual(_deep_merge_dict(a, b), expected_result)
+
+        a = {"domain": {"devices": 1024}, "volumes": [1, 2, 3], "network": {}}
+        b = {
+            "domain": {"machine": "non-exist-in-a", "devices": 1024, "foo": "bar"},
+            "volumes": [4, 5, 6],
+        }
+        expected_result = {
+            "domain": {"machine": "non-exist-in-a", "devices": 1024, "foo": "bar"},
+            "volumes": [1, 2, 3],
+            "network": {},
+        }
+        self.assertEqual(_deep_merge_dict(a, b), expected_result)
+
+        a = {"domain": {"devices": 1024}, "volumes": [1, 2, 3], "network": {}}
+        b = {
+            "domain": {"machine": "non-exist-in-a", "devices": 1024, "foo": ""},
+            "volumes": [4, 5, 6],
+        }
+        expected_result = {
+            "domain": {"machine": "non-exist-in-a", "devices": 1024, "foo": ""},
+            "volumes": [1, 2, 3],
+            "network": {},
+        }
+        self.assertEqual(_deep_merge_dict(a, b), expected_result)
+
+        a = {"domain": {"devices": 1024}, "volumes": [1, 2, 3], "network": {}}
+        b = {
+            "domain": {"machine": "non-exist-in-a", "devices": 1024, "foo": None},
+            "volumes": [4, 5, 6],
+        }
+        expected_result = {
+            "domain": {"machine": "non-exist-in-a", "devices": 1024, "foo": None},
+            "volumes": [1, 2, 3],
+            "network": {},
+        }
+        self.assertEqual(_deep_merge_dict(a, b), expected_result)
 
 
 class KubeVirtMockHttp(MockHttp):
