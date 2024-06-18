@@ -1060,7 +1060,7 @@ class KubeVirtNodeDriver(KubernetesDriverMixin, NodeDriver):
 
         # location -> namespace
         if isinstance(location, NodeLocation):
-            if location not in self.list_locations():
+            if location.name not in map(lambda x: x.name, self.list_locations()):
                 raise ValueError("The location must be one of the available namespaces")
             namespace = location.name
         else:
@@ -1600,6 +1600,16 @@ class KubeVirtNodeDriver(KubernetesDriverMixin, NodeDriver):
                 memory = vm["spec"]["template"]["spec"]["domain"]["resources"]["requests"]["memory"]
         memory = _memory_in_MB(memory)
 
+        memory_req = (
+            vm["spec"]["template"]["spec"]["domain"]["resources"]
+            .get("requests", {})
+            .get("memory", None)
+        )
+        if memory_req:
+            memory_req = _memory_in_MB(memory_req)
+        else:
+            memory_req = memory
+
         cpu = 1
         if vm["spec"]["template"]["spec"]["domain"]["resources"].get("limits", None):
             if vm["spec"]["template"]["spec"]["domain"]["resources"]["limits"].get("cpu", None):
@@ -1608,12 +1618,21 @@ class KubeVirtNodeDriver(KubernetesDriverMixin, NodeDriver):
             "spec"
         ]["template"]["spec"]["domain"]["resources"]["requests"].get("cpu", None):
             cpu = vm["spec"]["template"]["spec"]["domain"]["resources"]["requests"]["cpu"]
+            cpu_req = cpu
         elif vm["spec"]["template"]["spec"]["domain"].get("cpu", None):
             cpu = vm["spec"]["template"]["spec"]["domain"]["cpu"].get("cores", 1)
         if not isinstance(cpu, int):
             cpu = int(cpu.rstrip("m"))
 
-        extra_size = {"cpu": cpu}
+        cpu_req = (
+            vm["spec"]["template"]["spec"]["domain"]["resources"]
+            .get("requests", {})
+            .get("cpu", None)
+        )
+        if cpu_req is None:
+            cpu_req = cpu
+
+        extra_size = {"cpu": cpu, "cpu_request": cpu_req, "ram": memory, "ram_request": memory_req}
         size_name = "{} vCPUs, {}MB Ram".format(str(cpu), str(memory))
         size_id = hashlib.md5(size_name.encode("utf-8")).hexdigest()
         size = NodeSize(

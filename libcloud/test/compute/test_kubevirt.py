@@ -17,7 +17,7 @@ import sys
 
 from libcloud.test import MockHttp, unittest
 from libcloud.utils.py3 import httplib
-from libcloud.compute.base import NodeAuthPassword
+from libcloud.compute.base import NodeLocation, NodeAuthSSHKey, NodeAuthPassword
 from libcloud.compute.types import NodeState
 from libcloud.test.file_fixtures import ComputeFileFixtures
 from libcloud.compute.drivers.kubevirt import (
@@ -42,7 +42,7 @@ class KubeVirtTestCase(unittest.TestCase, KubernetesAuthTestCaseMixin):
 
     def test_list_locations(self):
         locations = self.driver.list_locations()
-        self.assertEqual(len(locations), 5)
+        self.assertEqual(len(locations), 6)
         self.assertEqual(locations[0].name, "default")
         self.assertEqual(locations[1].name, "kube-node-lease")
         self.assertEqual(locations[2].name, "kube-public")
@@ -54,7 +54,7 @@ class KubeVirtTestCase(unittest.TestCase, KubernetesAuthTestCaseMixin):
         self.assertEqual(id4, "e6d3d7e8-0ee5-428b-8e17-5187779e5627")
 
     def test_list_nodes(self):
-        nodes = self.driver.list_nodes()
+        nodes = self.driver.list_nodes(location="default")
         id0 = "74fd7665-fbd6-4565-977c-96bd21fb785a"
 
         self.assertEqual(len(nodes), 1)
@@ -250,6 +250,37 @@ class KubeVirtTestCase(unittest.TestCase, KubernetesAuthTestCaseMixin):
         else:
             self.fail("Expected ValueError")
 
+    def test_create_node_req_lim(self):
+        node = self.driver.create_node(
+            name="vm-test-tumbleweed-07",
+            size=KubeVirtNodeSize(
+                cpu=2,
+                ram=4096,
+                cpu_request="1m",
+                ram_request=1,
+            ),
+            image=KubeVirtNodeImage(
+                name="registry.internal.com/kubevirt-vmidisks/tumbleweed:240531"
+            ),
+            location=NodeLocation(
+                id="5341e71d-e8d8-4a1b-a97b-52864eb3dd7d",
+                name="testreqlim",
+                country="",
+                driver=self.driver,
+            ),
+            auth=NodeAuthSSHKey("ssh-rsa FAKEKEY foo@bar.com"),
+            ex_network={
+                "network_type": "pod",
+                "interface": "bridge",
+                "name": "default",
+            },
+        )
+        self.assertEqual(node.name, "vm-test-tumbleweed-07")
+        self.assertEqual(node.size.extra["cpu"], 2)
+        self.assertEqual(node.size.extra["cpu_request"], "1m")
+        self.assertEqual(node.size.ram, 4096)
+        self.assertEqual(node.size.extra["ram_request"], 1)
+
     def test_memory_in_MB(self):
         self.assertEqual(_memory_in_MB("128Mi"), 128)
         self.assertEqual(_memory_in_MB("128M"), 128)
@@ -353,6 +384,7 @@ class KubeVirtMockHttp(MockHttp):
     fixtures = ComputeFileFixtures("kubevirt")
 
     did_create_vm = False
+    did_create_vm_test_size_req_lim = False
 
     def _api_v1_namespaces(self, method, url, body, headers):
         if method == "GET":
@@ -496,6 +528,39 @@ class KubeVirtMockHttp(MockHttp):
     def _api_v1_namespaces_default_persistentvolumeclaims(self, method, url, body, headers):
         if method == "GET":
             body = self.fixtures.load("get_pvcs.json")
+        else:
+            AssertionError("Unsupported method")
+
+        return (httplib.OK, body, {}, httplib.responses[httplib.OK])
+
+    def _apis_kubevirt_io_v1alpha3_namespaces_testreqlim_virtualmachines(
+        self, method, url, body, headers
+    ):
+        if method == "GET":
+            if self.did_create_vm_test_size_req_lim:
+                body = self.fixtures.load("get_testreqlim_vms_after_create_vm.json")
+            else:
+                body = self.fixtures.load("get_default_vms.json")
+            resp = httplib.OK
+        elif method == "POST":
+            body = self.fixtures.load("create_vm_reqlim.json")
+            resp = httplib.CREATED
+            self.did_create_vm_test_size_req_lim = True
+        else:
+            AssertionError("Unsupported method")
+        return (resp, body, {}, httplib.responses[httplib.OK])
+
+    def _api_v1_namespaces_testreqlim_services(self, method, url, body, headers):
+        return self._api_v1_namespaces_default_services(method, url, body, headers)
+
+    def _api_v1_namespaces_testreqlim_pods(self, method, url, body, headers):
+        return self._api_v1_namespaces_default_pods(method, url, body, headers)
+
+    def _apis_kubevirt_io_v1alpha3_namespaces_testreqlim_virtualmachines_vm_test_tumbleweed_07(
+        self, method, url, body, headers
+    ):
+        if method == "GET":
+            body = self.fixtures.load("get_vm_test_tumbleweed_07.json")
         else:
             AssertionError("Unsupported method")
 
