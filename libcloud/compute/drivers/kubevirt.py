@@ -453,29 +453,55 @@ class KubeVirtNodeDriver(KubernetesDriverMixin, NodeDriver):
 
         :return: None
         """
+        # size -> cpu and memory limits / requests
+
+        ex_memory_limit = ex_memory_request = ex_cpu_limit = ex_cpu_request = None
+
         if size is not None:
             assert isinstance(size, NodeSize), "size must be a NodeSize"
-            ex_cpu = size.extra["cpu"]
-            ex_memory = size.ram
+            ex_cpu_limit = size.extra["cpu"]
+            ex_memory_limit = size.ram
+            # optional resc requests: default = limit
+            ex_cpu_request = size.extra.get("cpu_request", None) or ex_cpu_limit
+            ex_memory_request = size.extra.get("ram_request", None) or ex_memory_limit
 
-        if ex_memory is not None:
-            assert isinstance(ex_memory, int), "ex_memory must be an int in MiB"
-            memory = str(ex_memory) + "Mi"
+        # memory
 
-            vm["spec"]["template"]["spec"]["domain"]["resources"]["requests"]["memory"] = memory
+        if ex_memory is not None:  # legacy
+            ex_memory_limit = ex_memory
+            ex_memory_request = ex_memory
+
+        def _format_memory(memory_value):  # type: (int) -> str
+            assert isinstance(memory_value, int), "memory must be an int in MiB"
+            return str(memory_value) + "Mi"
+
+        if ex_memory_limit is not None:
+            memory = _format_memory(ex_memory_limit)
             vm["spec"]["template"]["spec"]["domain"]["resources"]["limits"]["memory"] = memory
+        if ex_memory_request is not None:
+            memory = _format_memory(ex_memory_request)
+            vm["spec"]["template"]["spec"]["domain"]["resources"]["requests"]["memory"] = memory
 
-        if ex_cpu is not None:
-            if isinstance(ex_cpu, str) and ex_cpu.endswith("m"):
-                cpu = ex_cpu
-            else:
-                try:
-                    cpu = float(ex_cpu)
-                except ValueError:
-                    raise ValueError("ex_cpu must be a number or a string ending with 'm'")
+        # cpu
 
-            vm["spec"]["template"]["spec"]["domain"]["resources"]["requests"]["cpu"] = cpu
+        if ex_cpu is not None:  # legacy
+            ex_cpu_limit = ex_cpu
+            ex_cpu_request = ex_cpu
+
+        def _format_cpu(cpu_value):  # type: (Union[int, str]) -> Union[str, float]
+            if isinstance(cpu_value, str) and cpu_value.endswith("m"):
+                return cpu_value
+            try:
+                return float(cpu_value)
+            except ValueError:
+                raise ValueError("cpu must be a number or a string ending with 'm'")
+
+        if ex_cpu_limit is not None:
+            cpu = _format_cpu(ex_cpu_limit)
             vm["spec"]["template"]["spec"]["domain"]["resources"]["limits"]["cpu"] = cpu
+        if ex_cpu_request is not None:
+            cpu = _format_cpu(ex_cpu_request)
+            vm["spec"]["template"]["spec"]["domain"]["resources"]["requests"]["cpu"] = cpu
 
     @staticmethod
     def _create_node_termination_grace_period(
@@ -1963,22 +1989,34 @@ def _memory_in_MB(memory):  # type: (Union[str, int]) -> int
         raise ValueError("memory unit not supported {}".format(memory))
 
 
-def KubeVirtNodeSize(cpu, ram):  # type: (int, int) -> NodeSize
+def KubeVirtNodeSize(
+    cpu, ram, cpu_request=None, ram_request=None
+):  # type: (int, int, Optional[int], Optional[int]) -> NodeSize
     """
     Create a NodeSize object for KubeVirt driver.
 
     This function is just a shorthand for ``NodeSize(ram=ram, extra={"cpu": cpu})``.
 
-    :param cpu: number of virtual CPUs
+    :param cpu: number of virtual CPUs (max limit)
     :type cpu: ``int``
 
-    :param ram: amount of RAM in MiB
+    :param ram: amount of RAM in MiB (max limit)
     :type ram: ``int``
+
+    :param cpu_request: number of virtual CPUs (min request)
+    :type cpu_request: ``int``
+
+    :param ram_request: amount of RAM in MiB (min request)
+    :type ram_request: ``int``
 
     :return: a NodeSize object with ram and extra.cpu set
     :rtype: :class:`NodeSize`
     """
     extra = {"cpu": cpu}
+
+    extra["cpu_request"] = cpu_request or cpu
+    extra["ram_request"] = ram_request or ram
+
     name = "{} vCPUs, {}MB Ram".format(str(cpu), str(ram))
     size_id = hashlib.md5(name.encode("utf-8")).hexdigest()
     return NodeSize(
