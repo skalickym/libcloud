@@ -367,7 +367,382 @@ class KubeVirtNodeDriver(KubernetesDriverMixin, NodeDriver):
             },
         }
 
-    # only has container disk support atm with no persistency
+    @staticmethod
+    def _create_node_vm_from_ex_template(
+        name, ex_template, other_args
+    ):  # type: (str, dict) -> dict
+        """
+        A part of create_node that deals with the VM template.
+        Returns the VM template with the name set.
+
+        :param name: A name to give the VM. The VM will be identified by
+                        this name and atm it cannot be changed after it is set.
+                        See also the name parameter in create_node.
+        :type name: ``str``
+
+        :param ex_template: A dictionary of kubernetes object that defines the
+                            KubeVirt VM. See also the ex_template parameter in create_node.
+        :type ex_template: ``dict`` with keys:
+                            ``apiVersion: str``, ``kind: str``, ``metadata: dict``
+                            and ``spec: dict``
+
+        :param other_args: Other parameters passed to the create_node method.
+                           This is used to warn the user about ignored parameters.
+                           See also the parameters of create_node.
+        :type other_args: ``dict``
+
+        :return: dict: The VM template with the name set.
+        """
+        assert isinstance(ex_template, dict), "ex_template must be a dictionary"
+
+        other_params = {
+            "size": other_args.get("size"),
+            "image": other_args.get("image"),
+            "auth": other_args.get("auth"),
+            "ex_disks": other_args.get("ex_disks"),
+            "ex_network": other_args.get("ex_network"),
+            "ex_termination_grace_period": other_args.get("ex_termination_grace_period"),
+            "ex_ports": other_args.get("ex_ports"),
+        }
+        ignored_non_none_param_keys = list(
+            filter(lambda x: other_params[x] is not None, other_params)
+        )
+        if ignored_non_none_param_keys:
+            warnings.warn(
+                "ex_template is provided, ignoring the following non-None "
+                "parameters: {}".format(ignored_non_none_param_keys)
+            )
+
+        vm = copy.deepcopy(ex_template)
+
+        if vm.get("metadata") is None:
+            vm["metadata"] = {}
+
+        if vm["metadata"].get("name") is None:
+            vm["metadata"]["name"] = name
+        elif vm["metadata"]["name"] != name:
+            warnings.warn(
+                "The name in the ex_template ({}) will be ignored. "
+                "The name provided in the arguments ({}) will be used.".format(
+                    vm["metadata"]["name"], name
+                )
+            )
+            vm["metadata"]["name"] = name
+
+        return vm
+
+    @staticmethod
+    def _create_node_size(
+        vm, size=None, ex_cpu=None, ex_memory=None
+    ):  # type: (dict, NodeSize, int, int) -> None
+        """
+        A part of create_node that deals with the size of the VM.
+        It will fill the vm with size information.
+
+        :param size: The size of the VM in terms of CPU and memory.
+                     See also the size parameter in create_node.
+        :type size: ``NodeSize`` with
+
+        :param ex_cpu: The number of CPU cores to allocate to the VM.
+                       See also the ex_cpu parameter in create_node.
+        :type ex_cpu: ``int`` or ``str``
+
+        :param ex_memory: The amount of memory to allocate to the VM in MiB.
+                          See also the ex_memory parameter in create_node.
+        :type ex_memory: ``int``
+
+        :return: None
+        """
+        if size is not None:
+            assert isinstance(size, NodeSize), "size must be a NodeSize"
+            ex_cpu = size.extra["cpu"]
+            ex_memory = size.ram
+
+        if ex_memory is not None:
+            assert isinstance(ex_memory, int), "ex_memory must be an int in MiB"
+            memory = str(ex_memory) + "Mi"
+
+            vm["spec"]["template"]["spec"]["domain"]["resources"]["requests"]["memory"] = memory
+            vm["spec"]["template"]["spec"]["domain"]["resources"]["limits"]["memory"] = memory
+
+        if ex_cpu is not None:
+            if isinstance(ex_cpu, str) and ex_cpu.endswith("m"):
+                cpu = ex_cpu
+            else:
+                try:
+                    cpu = float(ex_cpu)
+                except ValueError:
+                    raise ValueError("ex_cpu must be a number or a string ending with 'm'")
+
+            vm["spec"]["template"]["spec"]["domain"]["resources"]["requests"]["cpu"] = cpu
+            vm["spec"]["template"]["spec"]["domain"]["resources"]["limits"]["cpu"] = cpu
+
+    @staticmethod
+    def _create_node_termination_grace_period(
+        vm, ex_termination_grace_period
+    ):  # type: (dict, int) -> None
+        """
+        A part of create_node that deals with the termination grace period of the VM.
+        It will fill the vm with the termination grace period information.
+
+        :param vm: The VM template to be filled.
+        :type vm: ``dict``
+        :param ex_termination_grace_period: The termination grace period of the VM in seconds.
+                                            See also the ex_termination_grace_period parameter in create_node.
+        :type ex_termination_grace_period: ``int``
+        :return: None
+        """
+        assert isinstance(
+            ex_termination_grace_period, int
+        ), "ex_termination_grace_period must be an int"
+
+        vm["spec"]["template"]["spec"][
+            "terminationGracePeriodSeconds"
+        ] = ex_termination_grace_period
+
+    @staticmethod
+    def _create_node_network(vm, ex_network, ex_ports):  # type: (dict, dict, dict) -> None
+        """
+        A part of create_node that deals with the network of the VM.
+        It will fill the vm with network information.
+
+        :param vm: The VM template to be filled.
+        :type vm: ``dict``
+        :param ex_network: The network configuration of the VM.
+                           See also the ex_network parameter in create_node.
+        :type ex_network: ``dict``
+        :param ex_ports: The ports to expose in the VM.
+                         See also the ex_ports parameter in create_node.
+        :type ex_ports: ``dict``
+        :return: None
+        """
+        # ex_network -> network and interface
+        if ex_network is not None:
+            try:
+                if isinstance(ex_network, dict):
+                    interface = ex_network["interface"]
+                    network_name = ex_network["name"]
+                    network_type = ex_network["network_type"]
+                elif isinstance(ex_network, (tuple, list)):  # legacy 3-tuple
+                    network_type = ex_network[0]
+                    interface = ex_network[1]
+                    network_name = ex_network[2]
+                else:
+                    raise KeyError("ex_network must be a dictionary or a tuple/list")
+            except KeyError:
+                msg = (
+                    "ex_network: You must provide a dictionary with keys: "
+                    "'interface', 'name', 'network_type'."
+                )
+                raise KeyError(msg)
+        # add a default network
+        else:
+            interface = "masquerade"
+            network_name = "netw1"
+            network_type = "pod"
+
+        network_dict = {network_type: {}, "name": network_name}
+        interface_dict = {interface: {}, "name": network_name}
+
+        # ex_ports -> network.ports
+        ex_ports = ex_ports or {}
+        if ex_ports.get("ports_tcp"):
+            ports_to_expose = []
+            for port in ex_ports["ports_tcp"]:
+                ports_to_expose.append({"port": port, "protocol": "TCP"})
+            interface_dict[interface]["ports"] = ports_to_expose
+        if ex_ports.get("ports_udp"):
+            ports_to_expose = interface_dict[interface].get("ports", [])
+            for port in ex_ports.get("ports_udp"):
+                ports_to_expose.append({"port": port, "protocol": "UDP"})
+            interface_dict[interface]["ports"] = ports_to_expose
+
+        vm["spec"]["template"]["spec"]["networks"].append(network_dict)
+        vm["spec"]["template"]["spec"]["domain"]["devices"]["interfaces"].append(interface_dict)
+
+    @staticmethod
+    def _create_node_auth(vm, auth):
+        """
+        A part of create_node that deals with the authentication of the VM.
+        It will fill the vm with a cloud-init volume that injects the authentication.
+
+        :param vm: The VM template to be filled.
+        :param auth: The authentication method for the VM.
+                        See also the auth parameter in create_node.
+        :type auth: ``NodeAuthSSHKey`` or ``NodeAuthPassword``
+        :return: None
+        """
+        # auth requires cloud-init,
+        # and only one cloud-init volume is supported by kubevirt.
+        # So if both auth and cloud-init are provided, raise an error.
+        for volume in vm["spec"]["template"]["spec"]["volumes"]:
+            if "cloudInitNoCloud" in volume or "cloudInitConfigDrive" in volume:
+                raise ValueError(
+                    "Setting auth and cloudInit at the same time is not supported."
+                    "Use deploy_node() instead."
+                )
+
+        # cloud-init volume
+        cloud_init_volume = "auth-cloudinit-" + str(uuid.uuid4())
+        disk_dict = {"disk": {"bus": "virtio"}, "name": cloud_init_volume}
+        volume_dict = {
+            "name": cloud_init_volume,
+            "cloudInitNoCloud": {"userData": ""},
+        }
+
+        # cloud_init_config reference: https://kubevirt.io/user-guide/virtual_machines/startup_scripts/#injecting-ssh-keys-with-cloud-inits-cloud-config
+        if isinstance(auth, NodeAuthSSHKey):
+            public_key = auth.pubkey
+            cloud_init_config = (
+                """#cloud-config\n""" """ssh_authorized_keys:\n""" """  - {}\n"""
+            ).format(public_key)
+        elif isinstance(auth, NodeAuthPassword):
+            password = auth.password
+            cloud_init_config = (
+                """#cloud-config\n"""
+                """password: {}\n"""
+                """chpasswd: {{ expire: False }}\n"""
+                """ssh_pwauth: True\n"""
+            ).format(password)
+        else:
+            raise ValueError("auth must be NodeAuthSSHKey or NodeAuthPassword")
+        volume_dict["cloudInitNoCloud"]["userData"] = cloud_init_config
+
+        # add volume
+        vm["spec"]["template"]["spec"]["domain"]["devices"]["disks"].append(disk_dict)
+        vm["spec"]["template"]["spec"]["volumes"].append(volume_dict)
+
+    def _create_node_disks(self, vm, ex_disks, image, namespace, location):
+        """
+        A part of create_node that deals with the disks (and volumes) of the VM.
+        It will fill the vm with disk information.
+        OS image is added to the disks as well.
+
+        :param vm: The VM template to be filled.
+        :type vm: ``dict``
+        :param ex_disks: The disk configuration of the VM.
+                            See also the ex_disks parameter in create_node.
+        :type ex_disks: ``list``
+        :param image: The image to be used as the OS disk.
+                        See also the image parameter in create_node.
+        :param namespace: The namespace where the VM will live.
+                            See also the location parameter in create_node.
+        :type namespace: ``str``
+        :param location: The location where the VM will live.
+                            See also the location parameter in create_node.
+        :type location: ``str``
+
+        :return: None
+        """
+        # ex_disks -> disks and volumes
+
+        ex_disks = ex_disks or []
+
+        for i, disk in enumerate(ex_disks):
+            disk_type = disk.get("disk_type")
+            bus = disk.get("bus", "virtio")
+            disk_name = disk.get("name", "disk{}".format(i))
+            device = disk.get("device", "disk")
+
+            if disk_type not in DISK_TYPES:
+                raise ValueError("The possible values for this " "parameter are: ", DISK_TYPES)
+
+            # depending on disk_type, in the future,
+            # when more will be supported,
+            # additional elif should be added
+            if disk_type == "containerDisk":
+                try:
+                    image = disk["volume_spec"]["image"]
+                except KeyError:
+                    raise KeyError("A container disk needs a " "containerized image")
+
+                volumes_dict = {"containerDisk": {"image": image}, "name": disk_name}
+            elif disk_type == "persistentVolumeClaim":
+                if "volume_spec" not in disk:
+                    raise KeyError("You must provide a volume_spec dictionary")
+                if "claim_name" not in disk["volume_spec"]:
+                    msg = (
+                        "You must provide either a claim_name of an "
+                        "existing claim or if you want one to be "
+                        "created you must additionally provide size "
+                        "and the storage_class_name of the "
+                        "cluster, which allows dynamic provisioning, "
+                        "so a Persistent Volume Claim can be created. "
+                        "In the latter case please provide the desired "
+                        "size as well."
+                    )
+                    raise KeyError(msg)
+
+                claim_name = disk["volume_spec"]["claim_name"]
+
+                if claim_name not in self.ex_list_persistent_volume_claims(namespace=namespace):
+                    if (
+                        "size" not in disk["volume_spec"]
+                        or "storage_class_name" not in disk["volume_spec"]
+                    ):
+                        msg = (
+                            "disk['volume_spec']['size'] and "
+                            "disk['volume_spec']['storage_class_name'] "
+                            "are both required to create "
+                            "a new claim."
+                        )
+                        raise KeyError(msg)
+                    size = disk["volume_spec"]["size"]
+                    storage_class = disk["volume_spec"]["storage_class_name"]
+                    volume_mode = disk["volume_spec"].get("volume_mode", "Filesystem")
+                    access_mode = disk["volume_spec"].get("access_mode", "ReadWriteOnce")
+                    self.create_volume(
+                        size=size,
+                        name=claim_name,
+                        location=location,
+                        ex_storage_class_name=storage_class,
+                        ex_volume_mode=volume_mode,
+                        ex_access_mode=access_mode,
+                    )
+
+                volumes_dict = {
+                    "persistentVolumeClaim": {"claimName": claim_name},
+                    "name": disk_name,
+                }
+            else:
+                warnings.warn(
+                    "The disk type {} is not tested. Use at your own risk.".format(disk_type)
+                )
+                volumes_dict = {disk_type: disk.get("volume_spec", {}), "name": disk_name}
+
+            disk_dict = {device: {"bus": bus}, "name": disk_name}
+            vm["spec"]["template"]["spec"]["domain"]["devices"]["disks"].append(disk_dict)
+            vm["spec"]["template"]["spec"]["volumes"].append(volumes_dict)
+        # end of for disk in ex_disks
+
+        # image -> containerDisk -> add as the first disk
+        self._create_node_image(vm, image)
+
+    @staticmethod
+    def _create_node_image(vm, image):  # type: (dict, NodeImage) -> None
+        """
+        A part of create_node that deals with the image of the VM.
+        It will fill the vm with the OS image as the first disk.
+
+        :param vm: The VM template to be filled.
+        :param image: The image to be used as the OS disk.
+                        See also the image parameter in create_node.
+        :type image: ``NodeImage`` or ``str``
+        :return: None
+        """
+        # image -> containerDisk
+        # adding image in a container Disk
+        if isinstance(image, NodeImage):
+            image = image.name
+
+        boot_disk_name = "boot-disk-" + str(uuid.uuid4())
+        volumes_dict = {"containerDisk": {"image": image}, "name": boot_disk_name}
+        disk_dict = {"disk": {"bus": "virtio"}, "name": boot_disk_name}
+
+        # boot disk should be the first one, otherwise it will not boot
+        vm["spec"]["template"]["spec"]["domain"]["devices"]["disks"].insert(0, disk_dict)
+        vm["spec"]["template"]["spec"]["volumes"].insert(0, volumes_dict)
+
     def create_node(
         self,
         name,  # type: str
@@ -665,267 +1040,33 @@ class KubeVirtNodeDriver(KubernetesDriverMixin, NodeDriver):
         else:
             namespace = "default"
 
-        # ex_template or _base_vm_template -> vm
-
         # ex_template exists, use it to create the vm, ignore other parameters
         if ex_template is not None:
-            assert isinstance(ex_template, dict), "ex_template must be a dictionary"
-
-            other_params = {
-                "size": size,
-                "image": image,
-                "auth": auth,
-                "ex_disks": ex_disks,
-                "ex_network": ex_network,
-                "ex_termination_grace_period": ex_termination_grace_period,
-                "ex_ports": ex_ports,
-            }
-            ignored_non_none_param_keys = list(
-                filter(lambda x: other_params[x] is not None, other_params)
+            vm = self._create_node_vm_from_ex_template(
+                name=name, ex_template=ex_template, other_args=locals()
             )
-            if ignored_non_none_param_keys:
-                warnings.warn(
-                    "ex_template is provided, ignoring the following non-None "
-                    "parameters: {}".format(ignored_non_none_param_keys)
-                )
-
-            vm = copy.deepcopy(ex_template)
-
-            if vm.get("metadata") is None:
-                vm["metadata"] = {}
-
-            if vm["metadata"].get("name") is None:
-                vm["metadata"]["name"] = name
-            elif vm["metadata"]["name"] != name:
-                warnings.warn(
-                    "The name in the ex_template ({}) will be ignored. "
-                    "The name provided in the arguments ({}) will be used.".format(
-                        vm["metadata"]["name"], name
-                    )
-                )
-                vm["metadata"]["name"] = name
-
             return self._create_node_with_template(name=name, template=vm, namespace=namespace)
         # else (ex_template is None): create a vm with other parameters
-
-        # vm template to be populated
         vm = self._base_vm_template(name=name)
 
         # size -> cpu and memory limits
+        self._create_node_size(vm=vm, size=size, ex_cpu=ex_cpu, ex_memory=ex_memory)
 
-        if size is not None:
-            assert isinstance(size, NodeSize), "size must be a NodeSize"
-            ex_cpu = size.extra["cpu"]
-            ex_memory = size.ram
-
-        if ex_memory is not None:
-            assert isinstance(ex_memory, int), "ex_memory must be an int in MiB"
-            memory = str(ex_memory) + "Mi"
-            vm["spec"]["template"]["spec"]["domain"]["resources"]["requests"]["memory"] = memory
-            vm["spec"]["template"]["spec"]["domain"]["resources"]["limits"]["memory"] = memory
-
-        if ex_cpu is not None:
-            if isinstance(ex_cpu, str) and ex_cpu.endswith("m"):
-                cpu = ex_cpu
-            else:
-                try:
-                    cpu = float(ex_cpu)
-                except ValueError:
-                    raise ValueError("ex_cpu must be a number or a string ending with 'm'")
-            vm["spec"]["template"]["spec"]["domain"]["resources"]["requests"]["cpu"] = cpu
-            vm["spec"]["template"]["spec"]["domain"]["resources"]["limits"]["cpu"] = cpu
-
-        # ex_disks -> disks and volumes
-        ex_disks = ex_disks or []
-        for i, disk in enumerate(ex_disks):
-            disk_type = disk.get("disk_type")
-            bus = disk.get("bus", "virtio")
-            disk_name = disk.get("name", "disk{}".format(i))
-            device = disk.get("device", "disk")
-
-            if disk_type not in DISK_TYPES:
-                raise ValueError("The possible values for this " "parameter are: ", DISK_TYPES)
-
-            # depending on disk_type, in the future,
-            # when more will be supported,
-            # additional elif should be added
-            if disk_type == "containerDisk":
-                try:
-                    image = disk["volume_spec"]["image"]
-                except KeyError:
-                    raise KeyError("A container disk needs a " "containerized image")
-
-                volumes_dict = {"containerDisk": {"image": image}, "name": disk_name}
-            elif disk_type == "persistentVolumeClaim":
-                if "volume_spec" not in disk:
-                    raise KeyError("You must provide a volume_spec dictionary")
-                if "claim_name" not in disk["volume_spec"]:
-                    msg = (
-                        "You must provide either a claim_name of an "
-                        "existing claim or if you want one to be "
-                        "created you must additionally provide size "
-                        "and the storage_class_name of the "
-                        "cluster, which allows dynamic provisioning, "
-                        "so a Persistent Volume Claim can be created. "
-                        "In the latter case please provide the desired "
-                        "size as well."
-                    )
-                    raise KeyError(msg)
-
-                claim_name = disk["volume_spec"]["claim_name"]
-
-                if claim_name not in self.ex_list_persistent_volume_claims(namespace=namespace):
-                    if (
-                        "size" not in disk["volume_spec"]
-                        or "storage_class_name" not in disk["volume_spec"]
-                    ):
-                        msg = (
-                            "disk['volume_spec']['size'] and "
-                            "disk['volume_spec']['storage_class_name'] "
-                            "are both required to create "
-                            "a new claim."
-                        )
-                        raise KeyError(msg)
-                    size = disk["volume_spec"]["size"]
-                    storage_class = disk["volume_spec"]["storage_class_name"]
-                    volume_mode = disk["volume_spec"].get("volume_mode", "Filesystem")
-                    access_mode = disk["volume_spec"].get("access_mode", "ReadWriteOnce")
-                    self.create_volume(
-                        size=size,
-                        name=claim_name,
-                        location=location,
-                        ex_storage_class_name=storage_class,
-                        ex_volume_mode=volume_mode,
-                        ex_access_mode=access_mode,
-                    )
-
-                volumes_dict = {
-                    "persistentVolumeClaim": {"claimName": claim_name},
-                    "name": disk_name,
-                }
-            else:
-                warnings.warn(
-                    "The disk type {} is not tested. Use at your own risk.".format(disk_type)
-                )
-                volumes_dict = {disk_type: disk.get("volume_spec", {}), "name": disk_name}
-
-            disk_dict = {device: {"bus": bus}, "name": disk_name}
-            vm["spec"]["template"]["spec"]["domain"]["devices"]["disks"].append(disk_dict)
-            vm["spec"]["template"]["spec"]["volumes"].append(volumes_dict)
-        # end of for disk in ex_disks
-
-        # image -> containerDisk
-        # adding image in a container Disk
-        if isinstance(image, NodeImage):
-            image = image.name
-
-        boot_disk_name = "boot-disk-" + str(uuid.uuid4())
-        volumes_dict = {"containerDisk": {"image": image}, "name": boot_disk_name}
-        disk_dict = {"disk": {"bus": "virtio"}, "name": boot_disk_name}
-        # boot disk should be the first one, otherwise it will not boot
-        vm["spec"]["template"]["spec"]["domain"]["devices"]["disks"].insert(0, disk_dict)
-        vm["spec"]["template"]["spec"]["volumes"].insert(0, volumes_dict)
+        # ex_disks -> disks and volumes, image -> containerDisk
+        self._create_node_disks(vm, ex_disks, image, namespace, location)
 
         # auth -> cloud-init
         if auth is not None:
-            # auth requires cloud-init,
-            # and only one cloud-init volume is supported by kubevirt.
-            # So if both auth and cloud-init are provided, raise an error.
-
-            for volume in vm["spec"]["template"]["spec"]["volumes"]:
-                if "cloudInitNoCloud" in volume or "cloudInitConfigDrive" in volume:
-                    raise ValueError(
-                        "Setting auth and cloudInit at the same time is not supported."
-                        "Use deploy_node() instead."
-                    )
-
-            # cloud-init volume
-            cloud_init_volume = "auth-cloudinit-" + str(uuid.uuid4())
-            disk_dict = {"disk": {"bus": "virtio"}, "name": cloud_init_volume}
-            volume_dict = {
-                "name": cloud_init_volume,
-                "cloudInitNoCloud": {"userData": ""},
-            }
-
-            # auth
-            # cloud_init_config reference: https://kubevirt.io/user-guide/virtual_machines/startup_scripts/#injecting-ssh-keys-with-cloud-inits-cloud-config
-            if isinstance(auth, NodeAuthSSHKey):
-                public_key = auth.pubkey
-                cloud_init_config = (
-                    """#cloud-config\n""" """ssh_authorized_keys:\n""" """  - {}\n"""
-                ).format(public_key)
-            elif isinstance(auth, NodeAuthPassword):
-                password = auth.password
-                cloud_init_config = (
-                    """#cloud-config\n"""
-                    """password: {}\n"""
-                    """chpasswd: {{ expire: False }}\n"""
-                    """ssh_pwauth: True\n"""
-                ).format(password)
-            else:
-                raise ValueError("auth must be NodeAuthSSHKey or NodeAuthPassword")
-
-            volume_dict["cloudInitNoCloud"]["userData"] = cloud_init_config
-
-            # add volume
-            vm["spec"]["template"]["spec"]["domain"]["devices"]["disks"].append(disk_dict)
-            vm["spec"]["template"]["spec"]["volumes"].append(volume_dict)
+            self._create_node_auth(vm, auth)
 
         # now, all disks and volumes stuff are done
 
-        # ex_network -> network and interface
-
-        if ex_network is not None:
-            try:
-                if isinstance(ex_network, dict):
-                    interface = ex_network["interface"]
-                    network_name = ex_network["name"]
-                    network_type = ex_network["network_type"]
-                elif isinstance(ex_network, (tuple, list)):  # legacy 3-tuple
-                    network_type = ex_network[0]
-                    interface = ex_network[1]
-                    network_name = ex_network[2]
-                else:
-                    raise KeyError("ex_network must be a dictionary or a tuple/list")
-            except KeyError:
-                msg = (
-                    "ex_network: You must provide a dictionary with keys: "
-                    "'interface', 'name', 'network_type'."
-                )
-                raise KeyError(msg)
-        # add a default network
-        else:
-            interface = "masquerade"
-            network_name = "netw1"
-            network_type = "pod"
-
-        network_dict = {network_type: {}, "name": network_name}
-        interface_dict = {interface: {}, "name": network_name}
-
-        # ex_ports -> network.ports
-        ex_ports = ex_ports or {}
-        if ex_ports.get("ports_tcp"):
-            ports_to_expose = []
-            for port in ex_ports["ports_tcp"]:
-                ports_to_expose.append({"port": port, "protocol": "TCP"})
-            interface_dict[interface]["ports"] = ports_to_expose
-        if ex_ports.get("ports_udp"):
-            ports_to_expose = interface_dict[interface].get("ports", [])
-            for port in ex_ports.get("ports_udp"):
-                ports_to_expose.append({"port": port, "protocol": "UDP"})
-            interface_dict[interface]["ports"] = ports_to_expose
-
-        vm["spec"]["template"]["spec"]["networks"].append(network_dict)
-        vm["spec"]["template"]["spec"]["domain"]["devices"]["interfaces"].append(interface_dict)
+        # ex_network and ex_ports -> network and interface
+        self._create_node_network(vm, ex_network, ex_ports)
 
         # terminationGracePeriodSeconds
         if ex_termination_grace_period is not None:
-            assert isinstance(
-                ex_termination_grace_period, int
-            ), "ex_termination_grace_period must be an int"
-            vm["spec"]["template"]["spec"][
-                "terminationGracePeriodSeconds"
-            ] = ex_termination_grace_period
+            self._create_node_termination_grace_period(vm, ex_termination_grace_period)
 
         return self._create_node_with_template(name=name, template=vm, namespace=namespace)
 
