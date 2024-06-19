@@ -618,12 +618,14 @@ class KubeVirtNodeDriver(KubernetesDriverMixin, NodeDriver):
 
         # cloud_init_config reference: https://kubevirt.io/user-guide/virtual_machines/startup_scripts/#injecting-ssh-keys-with-cloud-inits-cloud-config
         if isinstance(auth, NodeAuthSSHKey):
-            public_key = auth.pubkey
+            public_key = auth.pubkey.strip()
+            public_key = json.dumps(public_key)
             cloud_init_config = (
                 """#cloud-config\n""" """ssh_authorized_keys:\n""" """  - {}\n"""
             ).format(public_key)
         elif isinstance(auth, NodeAuthPassword):
-            password = auth.password
+            password = auth.password.strip()
+            password = json.dumps(password)
             cloud_init_config = (
                 """#cloud-config\n"""
                 """password: {}\n"""

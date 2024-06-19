@@ -12,8 +12,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import sys
+import copy
+import json
 
 from libcloud.test import MockHttp, unittest
 from libcloud.utils.py3 import httplib
@@ -378,6 +379,73 @@ class KubeVirtTestCase(unittest.TestCase, KubernetesAuthTestCaseMixin):
             "network": {},
         }
         self.assertEqual(_deep_merge_dict(a, b), expected_result)
+
+    def test_create_node_auth(self):
+        mock_vm = {
+            "spec": {"template": {"spec": {"domain": {"devices": {"disks": []}}, "volumes": []}}}
+        }
+        cases = [
+            NodeAuthPassword("password"),
+            NodeAuthSSHKey("ssh-rsa FAKEKEY foo@bar.com"),
+            NodeAuthPassword("bad\npassword\nwith\nnew\nline"),
+            NodeAuthPassword("bad\npassword\n\fwith\tnot\b\b\b printable\a\n\rcharacters\b\n"),
+            NodeAuthPassword("bad\npassword\nwith\n\"double\" and 'single' quotes"),
+            NodeAuthSSHKey("ssh-rsa bad\nkey\nwith new line injected hacker@yaml.security"),
+            NodeAuthSSHKey(
+                "ssh-rsa bad\n\akey\b\b\b\nwith many\a \"injected' chars hacker@yaml.security"
+            ),
+        ]
+        for a in cases:
+            try:
+                vm = copy.deepcopy(mock_vm)
+                self.driver._create_node_auth(vm, a)
+                user_data = vm["spec"]["template"]["spec"]["volumes"][0]["cloudInitNoCloud"][
+                    "userData"
+                ]
+                self.assertTrue(isinstance(user_data, str))
+                # 1. make sure there are no newlines escaped
+                if isinstance(a, NodeAuthSSHKey):
+                    # >>> public_key = "ssh-rsa FAKEKEY foo@bar.com"
+                    # >>> a = (
+                    # ...     """#cloud-config\n""" """ssh_authorized_keys:\n""" """  - {}\n"""
+                    # ... ).format(public_key)
+                    # >>> len(a.splitlines())
+                    # 3
+                    self.assertEqual(len(user_data.splitlines()), 3)
+                elif isinstance(a, NodeAuthPassword):
+                    # >>> password = "password"
+                    # >>> a = (
+                    # ...     """#cloud-config\n"""
+                    # ...     """password: {}\n"""
+                    # ...     """chpasswd: {{ expire: False }}\n"""
+                    # ...     """ssh_pwauth: True\n"""
+                    # ... ).format(password)
+                    # >>> len(a.splitlines())
+                    # 4
+                    self.assertEqual(len(user_data.splitlines()), 4)
+                # 2. check if the quotes are well-escaped
+                for line in user_data.splitlines():
+                    key = ""  # public key or password
+                    if line.startswith("  - "):
+                        key = line[4:]
+                        self.assertEqual(key, json.dumps(a.pubkey.strip()))
+                    elif line.startswith("password: "):
+                        key = line[10:]
+                        self.assertEqual(key, json.dumps(a.password.strip()))
+                    else:
+                        continue
+                    self.assertTrue(key.startswith('"'))
+                    self.assertTrue(key.endswith('"'))
+                    # all double quotes inside must be escaped
+                    for i, c in enumerate(key[1:-1]):
+                        if c == '"':
+                            # since enumerate starts from key[1:],
+                            # so c is key[i+1],
+                            # and key[i] is the previous char
+                            self.assertEqual(key[i], "\\")
+
+            except Exception as e:
+                self.fail(f"Failed to create node auth for {a}: {e}")
 
 
 class KubeVirtMockHttp(MockHttp):
