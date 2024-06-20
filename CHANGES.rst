@@ -85,6 +85,17 @@ Compute
   (#2016)
   [Miguel Caballer - @micafer]
 
+- [KubeVirt] Various improvements and fixes in the driver:
+    * Improve compatibility with the base NodeDriver class
+    * Support for deployment (`deploy_node()`)
+    * Support for general volume (disks) types that KubeVirt supports
+    * Add support for the `ex_template` parameter in `create_node()` method
+    * Various improvements in `_to_node()` related to node information parsing
+    * Improved test suite
+    * Code refactoring and improvements
+  (#1983)
+  [@cdfmlr]
+
 Storage
 ~~~~~~~
 
