@@ -109,7 +109,7 @@ Storage
   [Salih Kerem Dokuz - @keremdokuz]
 
 Other / Development
-~~~~~--------------
+~~~~~~~~~~~~~~~~~~~
 
 - pytest library used for running tests and microbenchmarks has been upgraded to
   v8.1.
