@@ -89,10 +89,12 @@ where = ["./"]
 include = ["libcloud", "libcloud.test*" ]
 
 [tool.setuptools.package-data]
-"libcloud.test" = ["*.json", "*.xml", "*.pub", "*.key"]
+"*" = ["*.json", "*.xml", "*.pub", "*.key", "*.pem", "*.crt", "*.csv", "*.txt", "*.html"]
 "libcloud.test.compute.fixtures.misc" = ["*"]
+"libcloud.test.dns.fixtures.worldwidedns" = ["*"]
 
 [tool.setuptools]
+include-package-data = true
 exclude-package-data = { "*" = ["secrets.py"], "libcloud.test" = ["secrets.py"] }
 
 [tool.setuptools.dynamic]
