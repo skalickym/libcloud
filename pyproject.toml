@@ -90,7 +90,6 @@ include = ["libcloud", "libcloud.test*" ]
 
 [tool.setuptools.package-data]
 "libcloud.test" = ["*.json", "*.xml", "*.pub", "*.key"]
-"libcloud.test.compute.fixtures.openstack_v1_1" = ["*"]
 "libcloud.test.compute.fixtures.misc" = ["*"]
 
 [tool.setuptools]
