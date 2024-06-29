@@ -86,7 +86,11 @@ test = [
 
 [tool.setuptools.packages.find]
 where = ["./"]
-include = ["libcloud"]
+include = ["libcloud", "libcloud.test*" ]
+
+[tool.setuptools.package-data]
+"libcloud.test" = ["*.json", "*.xml", "*.pub", "*.key"]
+"libcloud.test.compute.fixtures.misc" = ["*"]
 
 [tool.setuptools]
 exclude-package-data = { "*" = ["secrets.py"], "libcloud.test" = ["secrets.py"] }
