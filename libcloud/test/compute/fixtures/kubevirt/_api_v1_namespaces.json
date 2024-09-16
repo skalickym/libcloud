@@ -93,6 +93,23 @@
         "status": {
           "phase": "Active"
         }
+      },
+      {
+        "spec": {
+          "finalizers": [
+            "kubernetes"
+          ]
+        },
+        "metadata": {
+          "name": "testreqlim",
+          "creationTimestamp": "2019-12-01T15:54:25Z",
+          "selfLink": "/api/v1/namespaces/default",
+          "resourceVersion": "146",
+          "uid": "5341e71d-e8d8-4a1b-a97b-52864eb3dd7d"
+        },
+        "status": {
+          "phase": "Active"
+        }
       }
     ]
   }

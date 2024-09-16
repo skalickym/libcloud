@@ -1,8 +1,8 @@
 Changelog
 =========
 
-Changes in Apache Libcloud in development
------------------------------------------
+Changes in Apache Libcloud 3.9.0
+--------------------------------
 
 Common
 ~~~~~~
@@ -76,6 +76,27 @@ Compute
   (#1972)
   [Aayush Rangwala - @aayushrangwala, Tomaz Muraus - @Kami]
 
+- [Amazon EC2] Update pricing and sizing data.
+  (#2012)
+  [Eric Anderson - @eric-anderson]
+
+- [OpenStack] Add `is_default` and `tags` extra fields to the OpenStack
+  Network Object (`OpenStackNetwork`).
+  (#2016)
+  [Miguel Caballer - @micafer]
+
+- [KubeVirt] Various improvements and fixes in the driver:
+   * Improve compatibility with the base NodeDriver class
+   * Support for deployment (`deploy_node()`)
+   * Support for general volume (disks) types that KubeVirt supports
+   * Add support for the `ex_template` parameter in `create_node()` method
+   * Various improvements in `_to_node()` related to node information parsing
+   * Improved test suite
+   * Code refactoring and improvements
+
+  (#1983)
+  [@cdfmlr]
+
 Storage
 ~~~~~~~
 
@@ -88,7 +109,7 @@ Storage
   [Salih Kerem Dokuz - @keremdokuz]
 
 Other / Development
-~~~~~--------------
+~~~~~~~~~~~~~~~~~~~
 
 - pytest library used for running tests and microbenchmarks has been upgraded to
   v8.1.
