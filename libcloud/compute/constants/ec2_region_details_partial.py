@@ -120,6 +120,13 @@ REGION_DETAILS = {
         "id": "eu-south-1",
         "signature_version": "4",
     },
+    "eu-south-2": {
+        "api_name": "ec2_eu_south_2",
+        "country": "Spain",
+        "endpoint": "ec2.eu-south-2.amazonaws.com",
+        "id": "eu-south-2",
+        "signature_version": "4",
+    },
     "eu-west-1": {
         "api_name": "ec2_eu_west",
         "country": "Ireland",
